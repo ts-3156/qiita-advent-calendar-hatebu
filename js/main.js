@@ -183,20 +183,32 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 
   CalendarList.prototype.init = function () {
-    var btn = $('<button class="btn btn-default" style="font-size: 12px;" />')
+    var refresh_btn = $('<button class="btn btn-info" style="font-size: 12px;" />')
         .addClass('update-all-calendar-btn')
-        .text('全てのカレンダーのはてぶ数を更新')
+        .text(' 全てのカレンダーのはてぶ数を更新')
+        .prepend('<i class="fa fa-refresh" />')
         .on('click', function(){
-          var _btn = $(this);
+          var btn = $(this);
           $('.update-each-calendar-btn').each(function(i){
             // 負荷を抑えるためのdelay
             setTimeout(function() {
-              _btn.trigger('click');
+              btn.trigger('click');
             } , 2000 * i);
           });
         });
 
-    $('h3').append(btn);
+    $('h3').append(refresh_btn).append('&nbsp;');
+
+    var remove_btn = $('<button class="btn btn-danger" style="font-size: 12px;" />')
+        .text(' はてぶ数のキャッシュを削除')
+        .prepend('<i class="fa fa-remove" />')
+        .on('click', function(){
+          if(window.confirm('Advent Calendar Hatebu のキャッシュを削除しますか？')){
+            clear_cache();
+          }
+        });
+
+    $('h3').append(remove_btn);
   };
 
   CalendarList.prototype.update = function () {
@@ -275,7 +287,8 @@ if (typeof String.prototype.startsWith != 'function') {
     if(!cache || !cache['count'] || cache['count'] == 0){
       var btn = $('<button class="btn btn-sm btn-default" style="font-size: 12px;" />')
           .addClass('update-each-calendar-btn')
-          .text('はてぶ数を更新')
+          .text(' はてぶ数を更新')
+          .prepend('<i class="fa fa-refresh" />')
           .on('click', function(){
             $.get(calendar, function(res){
               new Calendar(me.each_cal_td_selector, {url: calendar, html: res}).update(function(){
@@ -298,12 +311,6 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 
   // エントリーポイント
-  $('body').on('keypress', function(e){
-    if(e.which == 108 && window.confirm('Advent Calendar Hatebuのキャッシュを削除しますか？')){ // 108 == l key
-      clear_cache();
-    }
-  });
-
   var each_cal = 'table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day';
 
   if($('table.adventCalendar_calendar_table.table').exists()){
