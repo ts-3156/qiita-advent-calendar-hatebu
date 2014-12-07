@@ -1,14 +1,14 @@
 {
   "manifest_version": 2,
-  "name": "Advent Calendar Hatebu",
-  "version": "1.0",
+  "name": "Qiita Advent Calendar はてブ カウンター",
+  "version": "1.0.0",
 
-  "description": "Qiita Advent Calendarのはてブ数を表示するChrome Extension",
+  "description": "Qiita Advent Calendarのはてブ数を表示・取得・ソートするChrome Extensionです。",
 
   "icons": {
-    "16": "icons/icon.png",
-    "48": "icons/icon.png",
-    "128": "icons/icon.png"
+    "16": "icons/japan50_16.png",
+    "48": "icons/japan50_48.png",
+    "128": "icons/japan50_128.png"
   },
 
   "content_scripts": [
