@@ -12,7 +12,7 @@ if (typeof String.prototype.startsWith != 'function') {
   var JSON = global.JSON;
   var parseInt = global.parseInt;
 
-  var CACHE_MAX_AGE = 30; // 300 seconds == 5 minutes
+  var CACHE_MAX_AGE = 3600; // seconds
   var API = 'http://api.b.st-hatena.com/entry.count?url=';
   var IMAGE_API = 'http://b.hatena.ne.jp/entry/image/';
   var KEY_PREFIX = 'ACH:';
@@ -24,6 +24,7 @@ if (typeof String.prototype.startsWith != 'function') {
 
   // localStorageからの取得とJSON.parse
   function fetch_cache(key){
+    if(key.startsWith(KEY_PREFIX)) throw 'KEY_PREFIX付きのままlocalStorageにアクセスしている: ' + key;
     var json_str = localStorage.getItem(KEY_PREFIX + key);
     return JSON.parse(json_str ? json_str : '{}');
   }
@@ -36,15 +37,15 @@ if (typeof String.prototype.startsWith != 'function') {
   // 期限切れキャッシュの削除
   function clear_cache_if_expired(){
     Object.keys(localStorage).forEach(function(key){
-      if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu')){
+      if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:')){
         localStorage.removeItem(key);
         return;
       }
 
       if(!key.startsWith(KEY_PREFIX)) return;
-      var cache = fetch_cache(key);
+      var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
       if(!cache || !cache['created_at'] || cache['created_at'] < now_seconds() - CACHE_MAX_AGE){
-        localStorage.removeItem(key);
+        localStorage.removeItem(key); console.log('expired', key);
       }
     });
   }
