@@ -34,6 +34,16 @@ if (typeof String.prototype.startsWith != 'function') {
     localStorage.setItem(KEY_PREFIX + key, JSON.stringify(obj));
   }
 
+  // キャッシュの削除
+  function clear_cache(){
+    Object.keys(localStorage).forEach(function(key){
+      if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:') || key.startsWith(KEY_PREFIX)){
+        localStorage.removeItem(key);
+      }
+    });
+    console.log('cache cleared');
+  }
+
   // 期限切れキャッシュの削除
   function clear_cache_if_expired(){
     Object.keys(localStorage).forEach(function(key){
@@ -56,7 +66,7 @@ if (typeof String.prototype.startsWith != 'function') {
     return $('<span style="color: #FF6664; background-color: #FFEFEF;" />').text(num + ' users').css('font-size', font_size + 'px')
   }
 
-  // DOMにはてぶ数を追加
+  // カレンダーの各日付にはてぶ数を追加
   function hatebu_user_count(context, cache){
     context
       .attr('title', 'hateb: ' + cache['count'])
@@ -85,7 +95,7 @@ if (typeof String.prototype.startsWith != 'function') {
         .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
   }
 
-  // 各カレンダーページのDOMを更新
+  // 各カレンダーページを更新
   function update_calendar(context, cache){
     hatebu_user_count(context, cache);
     hatebu_calendar_sum();
@@ -111,12 +121,6 @@ if (typeof String.prototype.startsWith != 'function') {
         update_calendar(context, cache);
       });
     }
-  }
-
-  // カレンダー一覧ページのDOMを更新
-  function update_root(context, cache){
-    hatebu_user_count(context, cache);
-    hatebu_calendar_sum();
   }
 
   // カレンダー一覧ページの処理
@@ -147,14 +151,22 @@ if (typeof String.prototype.startsWith != 'function') {
             .append(hatebu_dummy_image(cache['count'], 16));
       }else{
         context
-            .append('&nbsp;')
-            .append($('<span style="font-size: 12px; color: #bbbbbb;" />').text('カレンダーを1度開いてください'));
+            .find('.please-open')
+            .remove()
+            .end()
+            .append($('<span class="please-open" style="font-size: 12px; color: #bbbbbb;" />').text(' カレンダーを1度開いてください'));
       }
     }
-
   }
 
+  // エントリーポイント
   if($('table.adventCalendar_calendar_table.table').exists()){
+    $('body').on('keypress', function(e){
+      if(e.which == 108){ // l key
+        clear_cache();
+      }
+    });
+
     clear_cache_if_expired();
 
     $('table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day').each(function(){
@@ -174,7 +186,12 @@ if (typeof String.prototype.startsWith != 'function') {
   }else{
     $('div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle').each(function(){
       var td = $(this);
-      var calendar = 'http://qiita.com' + td.find('a:last-child').attr('href');
+      var a = td.find('a:last-child');
+      var calendar = 'http://qiita.com' + a.attr('href');
+
+      a.on('click', function(){
+        display_hatebu_root_count(calendar, td);
+      });
       display_hatebu_root_count(calendar, td);
     });
   }
