@@ -1,5 +1,5 @@
 // icon http://www.flaticon.com/free-icon/japan-food_13200
-jQuery.fn.exists = function(){return Boolean(this.length > 0);}
+jQuery.fn.exists = function(){return Boolean(this.length > 0);};
 if (typeof String.prototype.startsWith != 'function') {
   String.prototype.startsWith = function (str){
     return this.indexOf(str) == 0;
@@ -73,7 +73,7 @@ if (typeof String.prototype.startsWith != 'function') {
     var sum = 0;
     Object.keys(localStorage).forEach(function(key){
       if(!key.startsWith(KEY_PREFIX)) return;
-      var cache = fetch_cache(key);
+      var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
       if(!cache || !cache['count']) return;
       sum += cache['count'] ? parseInt(cache['count']) : 0;
     });
@@ -122,27 +122,35 @@ if (typeof String.prototype.startsWith != 'function') {
   function display_hatebu_root_count(calendar, context){
     var cache = fetch_cache(calendar);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
-      ;
+      context
+          .append('&nbsp;')
+          .append(hatebu_dummy_image(cache['count'], 16));
     }else{
       var sum = 0;
       Object.keys(localStorage).forEach(function(key){
         if(!key.startsWith(KEY_PREFIX)) return;
-        var cache = fetch_cache(key);
+        var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
         if(!cache || !cache['calendar'] || cache['calendar'] != calendar) return;
         sum += cache['count'] ? parseInt(cache['count']) : 0;
       });
 
-      cache = {
-        count: sum,
-        image: IMAGE_API + calendar,
-        created_at: now_seconds()
-      };
-      set_cache(calendar, cache);
+      if(sum != 0){
+        cache = {
+          count: sum,
+          image: IMAGE_API + calendar,
+          created_at: now_seconds()
+        };
+        set_cache(calendar, cache);
+        context
+            .append('&nbsp;')
+            .append(hatebu_dummy_image(cache['count'], 16));
+      }else{
+        context
+            .append('&nbsp;')
+            .append($('<span style="font-size: 12px; color: #bbbbbb;" />').text('カレンダーを1度開いてください'));
+      }
     }
 
-    context
-      .append('&nbsp;')
-      .append(hatebu_dummy_image(cache['count'], 16));
   }
 
   if($('table.adventCalendar_calendar_table.table').exists()){
