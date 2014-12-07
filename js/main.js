@@ -78,6 +78,7 @@ if (typeof String.prototype.startsWith != 'function') {
       global.hatebu_dummy_image_cache[key] =
           $('<span class="hatebu-dummy-image" style="color: #FF6664; background-color: #FFEFEF;" />')
               .text(num + ' users')
+              .attr('data-count', num)
               .css('font-size', font_size + 'px')
               .css('padding', padding_size + 'px');
     }
@@ -234,7 +235,24 @@ if (typeof String.prototype.startsWith != 'function') {
           }
         });
 
-    $('h3').append(remove_btn);
+    $('h3').append(remove_btn).append('&nbsp;');
+
+    var sort_btn = $('<button class="btn btn-default" style="font-size: 12px;" />')
+        .text(' はてぶ数の降順でソート')
+        .prepend('<i class="fa fa-sort" />')
+        .on('click', function(){
+          me.tds.sortElements(function(a, b){
+            var a_count = $(a).find('.hatebu-dummy-image').data('count');
+            var b_count = $(b).find('.hatebu-dummy-image').data('count');
+            if(!a_count) a_count = 0;
+            if(!b_count) b_count = 0;
+
+            // DESC
+            return a_count < b_count ? 1 : -1;
+          });
+        });
+
+    $('h3').append(sort_btn).append('&nbsp;');
 
     //var checkbox = $('<label style="font-size: 12px;" />')
     //    .append('<input type="checkbox" />')
