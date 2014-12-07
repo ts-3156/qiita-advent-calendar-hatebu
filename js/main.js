@@ -11,6 +11,8 @@ if (typeof String.prototype.startsWith != 'function') {
   var localStorage = global.localStorage;
   var JSON = global.JSON;
   var parseInt = global.parseInt;
+  var setInterval = global.setInterval;
+  var clearInterval = global.clearInterval;
 
   var CACHE_MAX_AGE = 3600; // seconds
   var API = 'http://api.b.st-hatena.com/entry.count?url=';
@@ -63,19 +65,20 @@ if (typeof String.prototype.startsWith != 'function') {
   // はてぶ画像っぽいspanを作る
   function hatebu_dummy_image(num, font_size){
     var font_size = font_size ? font_size : 11;
-    return $('<span style="color: #FF6664; background-color: #FFEFEF;" />').text(num + ' users').css('font-size', font_size + 'px')
+    return $('<span class="hatebu-dummy-image" style="color: #FF6664; background-color: #FFEFEF;" />').text(' ' + num + ' users').css('font-size', font_size + 'px')
   }
 
   // カレンダーの各日付にはてぶ数を追加
   function hatebu_user_count(context, cache){
     context
-      .attr('title', 'hateb: ' + cache['count'])
-      .append('&nbsp;');
+      .attr('title', 'hateb: ' + cache['count']);
 
     if(cache['count'] == 0){
       context.append(hatebu_dummy_image(0));
     }else{
-      context.append($('<img />').attr('src', cache['image']));
+      context
+          .append('&nbsp;')
+          .append($('<img />').attr('src', cache['image']));
     }
   }
 
@@ -128,7 +131,6 @@ if (typeof String.prototype.startsWith != 'function') {
     var cache = fetch_cache(calendar);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
       context
-          .append('&nbsp;')
           .append(hatebu_dummy_image(cache['count'], 16));
     }else{
       var sum = 0;
@@ -147,7 +149,9 @@ if (typeof String.prototype.startsWith != 'function') {
         };
         set_cache(calendar, cache);
         context
-            .append('&nbsp;')
+            .find('.hatebu-dummy-image')
+            .remove()
+            .end()
             .append(hatebu_dummy_image(cache['count'], 16));
       }else{
         context
@@ -190,7 +194,17 @@ if (typeof String.prototype.startsWith != 'function') {
       var calendar = 'http://qiita.com' + a.attr('href');
 
       a.on('click', function(){
-        display_hatebu_root_count(calendar, td);
+        var timer_id = null, loop_num = 0;
+        function stop_timer() {
+          clearInterval(timer_id);
+        }
+        (function () {
+          timer_id = setInterval(function () {
+            display_hatebu_root_count(calendar, td);
+            loop_num++; console.log('waiting ' + loop_num);
+            if(loop_num > 3) stop_timer();
+          }, 1000);
+        })();
       });
       display_hatebu_root_count(calendar, td);
     });
