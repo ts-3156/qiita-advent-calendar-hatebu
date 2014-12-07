@@ -191,13 +191,13 @@ if (typeof String.prototype.startsWith != 'function') {
         .text(' 全ての未集計カレンダーのはてぶ数を更新')
         .prepend('<i class="fa fa-refresh" />')
         .on('click', function(){
-          var btn = $(this);
-          if(window.confirm('数分かかりますがよろしいですか？')){
+          if(window.confirm('更新を開始してもよろしいですか？')){
             $('.update-each-calendar-btn').each(function(i){
+              var btn = $(this);
               // 負荷を抑えるためのdelay
               setTimeout(function() {
                 btn.trigger('click');
-              } , 2000 * i);
+              } , 500 * i);
             });
           }
         });
