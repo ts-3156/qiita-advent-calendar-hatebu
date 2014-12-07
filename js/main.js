@@ -307,11 +307,15 @@ if (typeof String.prototype.startsWith != 'function') {
         .find('.hatebu-dummy-image-wrapper')
         .remove();
 
-    var _btn = $('<button class="btn btn-sm btn-default" style="font-size: 12px;" />')
-        .addClass('update-each-calendar-btn')
-        .text(' はてぶ数を更新')
-        .prepend('<i class="fa fa-refresh" />')
-        .on('click', function(){
+    if(!me._each_update_btn_cache){
+      me._each_update_btn_cache = $('<button class="btn btn-sm btn-default" style="font-size: 12px;" />')
+          .addClass('update-each-calendar-btn')
+          .text(' はてぶ数を更新')
+          .prepend('<i class="fa fa-refresh" />');
+    }
+    var _btn = me._each_update_btn_cache.clone(false);
+
+        _btn.on('click', function(){
           $.get(calendar, function(res){
             new Calendar(me.each_cal_td_selector, {url: calendar, html: res}).update(function(){
               me.update_each(calendar, context, true);
