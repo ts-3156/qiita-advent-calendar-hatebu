@@ -1,5 +1,5 @@
 // icon http://www.flaticon.com/free-icon/japan-food_13200
-
+jQuery.fn.exists = function(){return Boolean(this.length > 0);}
 if (typeof String.prototype.startsWith != 'function') {
   String.prototype.startsWith = function (str){
     return this.indexOf(str) == 0;
@@ -45,7 +45,7 @@ if (typeof String.prototype.startsWith != 'function') {
   }
 
   // DOMにはてぶ数を追加
-  function append_count(context, cache){
+  function hatebu_user_count(context, cache){
     context
       .attr('title', 'hateb: ' + cache['count'])
       .append('&nbsp;');
@@ -58,7 +58,7 @@ if (typeof String.prototype.startsWith != 'function') {
   }
 
   // 現在のカレンダーのはてぶ数合計をtableタグのcaptionに追加
-  function hatebu_sum(){
+  function hatebu_calendar_sum(){
     var sum = 0;
     Object.keys(localStorage).forEach(function(key){
       if(!key.startsWith('http')) return;
@@ -73,15 +73,15 @@ if (typeof String.prototype.startsWith != 'function') {
   }
 
   // DOMを更新
-  function update(context, cache){
-    append_count(context, cache);
-    hatebu_sum();
+  function update_calendar(context, cache){
+    hatebu_user_count(context, cache);
+    hatebu_calendar_sum();
   }
 
-  function hatebu_count(blog, context){
+  function display_hatebu_count(blog, context){
     var cache = fetch_cache(blog);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
-      update(context, cache);
+      update_calendar(context, cache);
     }else{
       $.get(API + encodeURIComponent(blog), function(res){
         var count = res == '' ? 0 : parseInt(res);
@@ -94,21 +94,25 @@ if (typeof String.prototype.startsWith != 'function') {
           created_at: now_seconds()
         };
         localStorage.setItem(blog, JSON.stringify(cache));
-        update(context, cache);
+        update_calendar(context, cache);
       });
     }
   }
 
-  clear_cache_if_expired();
+  if($('table.adventCalendar_calendar_table.table').exists()){
+    clear_cache_if_expired();
 
-  $('table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day').each(function(){
-    var td = $(this);
-    var author = td.find('p.adventCalendar_calendar_author a');
-    var blog = td.find('p.adventCalendar_calendar_entry a').attr('href');
-    if(blog === undefined || blog == ''){
-      return true
-    }
+    $('table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day').each(function(){
+      var td = $(this);
+      var author = td.find('p.adventCalendar_calendar_author a');
+      var blog = td.find('p.adventCalendar_calendar_entry a').attr('href');
+      if(blog === undefined || blog == ''){
+        return true
+      }
 
-    hatebu_count(blog, author);
-  });
+      display_hatebu_count(blog, author);
+    });
+  }else{
+
+  }
 })(window, jQuery);
