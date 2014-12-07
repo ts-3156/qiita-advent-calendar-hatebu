@@ -81,12 +81,17 @@ if (typeof String.prototype.startsWith != 'function') {
         .append(hatebu_dummy_image(num, font_size));
   }
 
-  var Calendar = function (td_selector) {
-    this.tds = $(td_selector);
+  var Calendar = function (td_selector, context) {
+    this.tds = $(td_selector, context);
   };
 
-  Calendar.prototype.update = function () {
+  Calendar.prototype.update = function (callback_fn) {
     var me = this;
+
+    if (typeof callback_fn == 'function') {
+      me.draw_callback = callback_fn;
+    }
+
     this.tds.each(function(){
       var td = $(this);
       var author = td.find('p.adventCalendar_calendar_author a');
@@ -128,6 +133,10 @@ if (typeof String.prototype.startsWith != 'function') {
   Calendar.prototype.draw = function (context, cache) {
     this.add_count_beside_name(context, cache);
     this.add_all_count_in_caption();
+
+    if (typeof this.draw_callback == 'function') {
+      this.draw_callback();
+    }
   };
 
   // カレンダーの各ユーザー名の横にはてぶ数を追加
@@ -161,8 +170,9 @@ if (typeof String.prototype.startsWith != 'function') {
         .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
   };
 
-  var CalendarList = function (td_selector) {
+  var CalendarList = function (td_selector, each_cal_td_selector) {
     this.tds = $(td_selector);
+    this.each_cal_td_selector = each_cal_td_selector;
   };
 
   CalendarList.prototype.update = function () {
@@ -181,7 +191,7 @@ if (typeof String.prototype.startsWith != 'function') {
           timer_id = setInterval(function () {
             me.update_each(calendar, td);
             loop_num++;
-            if(loop_num > 3) stop_timer();
+            if(loop_num > 5) stop_timer();
           }, 1000);
         })();
       });
@@ -190,6 +200,7 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 
   CalendarList.prototype.update_each = function (calendar, context) {
+    var me = this;
     var cache = fetch_cache(calendar);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
       ;
@@ -211,9 +222,14 @@ if (typeof String.prototype.startsWith != 'function') {
         set_cache(calendar, cache);
       }else{
         cache = null;
+        //$.get(calendar, function(res){
+        //  new Calendar(me.each_cal_td_selector, res).update(function(){
+        //    me.update_each(calendar, context);
+        //  });
+        //});
       }
     }
-    this.draw(context, cache);
+    me.draw(context, cache);
   };
 
   // カレンダー一覧ページを更新
@@ -241,13 +257,13 @@ if (typeof String.prototype.startsWith != 'function') {
     }
   });
 
+  var each_cal = 'table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day';
+
   if($('table.adventCalendar_calendar_table.table').exists()){
     clear_cache_if_expired();
-
-    new Calendar('table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day')
-        .update();
+    new Calendar(each_cal, document.body).update();
   }else{
-    new CalendarList('div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle')
-        .update();
+    var cal_list = 'div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle';
+    new CalendarList(cal_list, each_cal).update();
   }
 })(window, jQuery);
