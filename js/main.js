@@ -68,17 +68,38 @@ if (typeof String.prototype.startsWith != 'function') {
     var font_size = font_size ? font_size : 11;
     var padding_size = Math.round(font_size / 5);
     if(padding_size > 3) padding_size = 3;
-    return $('<span class="hatebu-dummy-image" style="color: #FF6664; background-color: #FFEFEF;" />')
-        .text(num + ' users')
-        .css('font-size', font_size + 'px')
-        .css('padding', padding_size + 'px')
+
+    if(!global.hatebu_dummy_image_cache){
+      global.hatebu_dummy_image_cache = {};
+    }
+
+    var key = num + '-' + font_size;
+    if(!global.hatebu_dummy_image_cache[key]){
+      global.hatebu_dummy_image_cache[key] =
+          $('<span class="hatebu-dummy-image" style="color: #FF6664; background-color: #FFEFEF;" />')
+              .text(num + ' users')
+              .css('font-size', font_size + 'px')
+              .css('padding', padding_size + 'px');
+    }
+    return global.hatebu_dummy_image_cache[key].clone(false)
   }
 
   // はてぶ画像っぽいspanに半角空白を付ける
   function hatebu_dummy_image_wrapper(num, font_size){
-    return $('<span class="hatebu-dummy-image-wrapper" />')
-        .append('&nbsp;')
-        .append(hatebu_dummy_image(num, font_size));
+    var font_size = font_size ? font_size : 11;
+
+    if(!global.hatebu_dummy_image_wrapper_cache){
+      global.hatebu_dummy_image_wrapper_cache = {};
+    }
+
+    var key = num + '-' + font_size;
+    if(!global.hatebu_dummy_image_wrapper_cache[key]){
+      global.hatebu_dummy_image_wrapper_cache[key] =
+          $('<span class="hatebu-dummy-image-wrapper" />')
+              .append('&nbsp;')
+              .append(hatebu_dummy_image(num, font_size));
+    }
+    return global.hatebu_dummy_image_wrapper_cache[key].clone(false)
   }
 
   var Calendar = function (td_selector, options) {
@@ -206,7 +227,7 @@ if (typeof String.prototype.startsWith != 'function') {
 
     var remove_btn = $('<button class="btn btn-danger" style="font-size: 12px;" />')
         .text(' はてぶ数のキャッシュを削除')
-        .prepend('<i class="fa fa-remove" />')
+        .prepend('<i class="fa fa-times" />')
         .on('click', function(){
           if(window.confirm('Advent Calendar Hatebu のキャッシュを削除しますか？')){
             clear_cache();
