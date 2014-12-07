@@ -81,48 +81,33 @@ if (typeof String.prototype.startsWith != 'function') {
         .append(hatebu_dummy_image(num, font_size));
   }
 
-  // カレンダーの各日付にはてぶ数を追加
-  function hatebu_user_count(context, cache){
-    context
-        .attr('title', 'hateb: ' + cache['count'])
-        .append('&nbsp;');
+  var Calendar = function (td_selector) {
+    this.tds = $(td_selector);
+  };
 
-    if(cache['count'] == 0){
-      context
-          .append(hatebu_dummy_image(0));
-    }else{
-      context
-          .append($('<img />').attr('src', cache['image']));
-    }
-  }
+  Calendar.prototype.update = function () {
+    var me = this;
+    this.tds.each(function(){
+      var td = $(this);
+      var author = td.find('p.adventCalendar_calendar_author a');
+      var blog = td.find('p.adventCalendar_calendar_entry a').attr('href');
+      if(blog === undefined || blog == ''){
+        return true
+      }
 
-  // 現在のカレンダーのはてぶ数合計をtableタグのcaptionに追加
-  function hatebu_calendar_sum(){
-    var sum = 0;
-    Object.keys(localStorage).forEach(function(key){
-      if(!key.startsWith(KEY_PREFIX)) return;
-      var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
-      if(!cache || !cache['count'] || location.href != cache['calendar']) return;
-      sum += cache['count'] ? parseInt(cache['count']) : 0;
+      if(blog.startsWith('/')){
+        blog = 'http://qiita.com' + blog;
+      }
+
+      me.update_each(blog, author);
     });
-    $('table.adventCalendar_calendar_table.table')
-        .find('caption')
-        .remove()
-        .end()
-        .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
-  }
+  };
 
-  // 各カレンダーページを更新
-  function update_calendar(context, cache){
-    hatebu_user_count(context, cache);
-    hatebu_calendar_sum();
-  }
-
-  // 各カレンダーページの処理
-  function display_hatebu_calendar_count(blog, context){
+  Calendar.prototype.update_each = function (blog, context) {
+    var me = this;
     var cache = fetch_cache(blog);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
-      update_calendar(context, cache);
+      me.draw(context, cache);
     }else{
       $.get(API + encodeURIComponent(blog), function(res){
         var count = res == '' ? 0 : parseInt(res);
@@ -135,10 +120,46 @@ if (typeof String.prototype.startsWith != 'function') {
           created_at: now_seconds()
         };
         set_cache(blog, cache);
-        update_calendar(context, cache);
+        me.draw(context, cache);
       });
     }
-  }
+  };
+
+  Calendar.prototype.draw = function (context, cache) {
+    this.add_count_beside_name(context, cache);
+    this.add_all_count_in_caption();
+  };
+
+  // カレンダーの各ユーザー名の横にはてぶ数を追加
+  Calendar.prototype.add_count_beside_name = function (context, cache) {
+    context
+        .attr('title', 'hateb: ' + cache['count'])
+        .append('&nbsp;');
+
+    if(cache['count'] == 0){
+      context
+          .append(hatebu_dummy_image(0));
+    }else{
+      context
+          .append($('<img />').attr('src', cache['image']));
+    }
+  };
+
+  // 現在のカレンダーのはてぶ数合計をtableタグのcaptionに追加
+  Calendar.prototype.add_all_count_in_caption = function () {
+    var sum = 0;
+    Object.keys(localStorage).forEach(function(key){
+      if(!key.startsWith(KEY_PREFIX)) return;
+      var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
+      if(!cache || !cache['count'] || location.href != cache['calendar']) return;
+      sum += cache['count'] ? parseInt(cache['count']) : 0;
+    });
+    $('table.adventCalendar_calendar_table.table')
+        .find('caption')
+        .remove()
+        .end()
+        .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
+  };
 
   // カレンダー一覧ページを更新
   function update_calendar_root(context, cache){
@@ -195,20 +216,8 @@ if (typeof String.prototype.startsWith != 'function') {
   if($('table.adventCalendar_calendar_table.table').exists()){
     clear_cache_if_expired();
 
-    $('table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day').each(function(){
-      var td = $(this);
-      var author = td.find('p.adventCalendar_calendar_author a');
-      var blog = td.find('p.adventCalendar_calendar_entry a').attr('href');
-      if(blog === undefined || blog == ''){
-        return true
-      }
-
-      if(blog.startsWith('/')){
-        blog = 'http://qiita.com' + blog;
-      }
-
-      display_hatebu_calendar_count(blog, author);
-    });
+    new Calendar('table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day')
+        .update();
   }else{
     $('div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle').each(function(){
       var td = $(this);
