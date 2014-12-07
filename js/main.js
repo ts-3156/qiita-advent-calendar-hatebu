@@ -15,6 +15,7 @@ if (typeof String.prototype.startsWith != 'function') {
   var CACHE_MAX_AGE = 300; // 300 seconds == 5 minutes
   var API = 'http://api.b.st-hatena.com/entry.count?url=';
   var IMAGE_API = 'http://b.hatena.ne.jp/entry/image/';
+  var KEY_PREFIX = 'advent_calendar_hatebu:';
 
   // 現在の秒数
   function now_seconds(){
@@ -23,17 +24,22 @@ if (typeof String.prototype.startsWith != 'function') {
 
   // localStorageからの取得とJSON.parse
   function fetch_cache(key){
-    var json_str = localStorage.getItem(key);
+    var json_str = localStorage.getItem(KEY_PREFIX + key);
     return JSON.parse(json_str ? json_str : '{}');
+  }
+
+  // JSON.stringifyとlocalStorageへの保存
+  function set_cache(key, obj){
+    localStorage.setItem(KEY_PREFIX + key, JSON.stringify(obj));
   }
 
   // 期限切れキャッシュの削除
   function clear_cache_if_expired(){
     Object.keys(localStorage).forEach(function(key){
-      if(!key.startsWith('http')) return;
+      if(!key.startsWith(KEY_PREFIX)) return;
       var cache = fetch_cache(key);
       if(!cache || !cache['created_at'] || cache['created_at'] < now_seconds() - CACHE_MAX_AGE){
-        localStorage.removeItem(key);
+        localStorage.removeItem(KEY_PREFIX + key);
       }
     });
   }
@@ -61,8 +67,9 @@ if (typeof String.prototype.startsWith != 'function') {
   function hatebu_calendar_sum(){
     var sum = 0;
     Object.keys(localStorage).forEach(function(key){
-      if(!key.startsWith('http')) return;
+      if(!key.startsWith(KEY_PREFIX)) return;
       var cache = fetch_cache(key);
+      if(!cache || !cache['count']) return;
       sum += cache['count'] ? parseInt(cache['count']) : 0;
     });
     $('table.adventCalendar_calendar_table.table')
@@ -72,13 +79,14 @@ if (typeof String.prototype.startsWith != 'function') {
         .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
   }
 
-  // DOMを更新
+  // 各カレンダーページのDOMを更新
   function update_calendar(context, cache){
     hatebu_user_count(context, cache);
     hatebu_calendar_sum();
   }
 
-  function display_hatebu_count(blog, context){
+  // 各カレンダーページの処理
+  function display_hatebu_calendar_count(blog, context){
     var cache = fetch_cache(blog);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
       update_calendar(context, cache);
@@ -93,10 +101,41 @@ if (typeof String.prototype.startsWith != 'function') {
           calendar: global.location.href,
           created_at: now_seconds()
         };
-        localStorage.setItem(blog, JSON.stringify(cache));
+        set_cache(blog, cache);
         update_calendar(context, cache);
       });
     }
+  }
+
+  // カレンダー一覧ページのDOMを更新
+  function update_root(context, cache){
+    hatebu_user_count(context, cache);
+    hatebu_calendar_sum();
+  }
+
+  // カレンダー一覧ページの処理
+  function display_hatebu_root_count(calendar, context){
+    var cache = fetch_cache(calendar);
+    if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
+      ;
+    }else{
+      var sum = 0;
+      Object.keys(localStorage).forEach(function(key){
+        if(!key.startsWith(KEY_PREFIX)) return;
+        var cache = fetch_cache(key);
+        if(!cache || !cache['calendar'] || cache['calendar'] != calendar) return;
+        sum += cache['count'] ? parseInt(cache['count']) : 0;
+      });
+
+      cache = {
+        count: sum,
+        image: IMAGE_API + calendar,
+        created_at: now_seconds()
+      };
+      set_cache(calendar, cache);
+    }
+
+    context.append(': ' + cache['count']);
   }
 
   if($('table.adventCalendar_calendar_table.table').exists()){
@@ -110,9 +149,13 @@ if (typeof String.prototype.startsWith != 'function') {
         return true
       }
 
-      display_hatebu_count(blog, author);
+      display_hatebu_calendar_count(blog, author);
     });
   }else{
-
+    $('div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle').each(function(){
+      var td = $(this);
+      var calendar = 'http://qiita.com' + td.find('a:last-child').attr('href');
+      display_hatebu_root_count(calendar, td);
+    });
   }
 })(window, jQuery);
