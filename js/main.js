@@ -12,10 +12,10 @@ if (typeof String.prototype.startsWith != 'function') {
   var JSON = global.JSON;
   var parseInt = global.parseInt;
 
-  var CACHE_MAX_AGE = 300; // 300 seconds == 5 minutes
+  var CACHE_MAX_AGE = 30; // 300 seconds == 5 minutes
   var API = 'http://api.b.st-hatena.com/entry.count?url=';
   var IMAGE_API = 'http://b.hatena.ne.jp/entry/image/';
-  var KEY_PREFIX = 'advent_calendar_hatebu:';
+  var KEY_PREFIX = 'ACH:';
 
   // 現在の秒数
   function now_seconds(){
@@ -36,10 +36,15 @@ if (typeof String.prototype.startsWith != 'function') {
   // 期限切れキャッシュの削除
   function clear_cache_if_expired(){
     Object.keys(localStorage).forEach(function(key){
+      if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu')){
+        localStorage.removeItem(key);
+        return;
+      }
+
       if(!key.startsWith(KEY_PREFIX)) return;
       var cache = fetch_cache(key);
       if(!cache || !cache['created_at'] || cache['created_at'] < now_seconds() - CACHE_MAX_AGE){
-        localStorage.removeItem(KEY_PREFIX + key);
+        localStorage.removeItem(key);
       }
     });
   }
@@ -135,7 +140,9 @@ if (typeof String.prototype.startsWith != 'function') {
       set_cache(calendar, cache);
     }
 
-    context.append(': ' + cache['count']);
+    context
+      .append('&nbsp;')
+      .append(hatebu_dummy_image(cache['count'], 16));
   }
 
   if($('table.adventCalendar_calendar_table.table').exists()){
@@ -147,6 +154,10 @@ if (typeof String.prototype.startsWith != 'function') {
       var blog = td.find('p.adventCalendar_calendar_entry a').attr('href');
       if(blog === undefined || blog == ''){
         return true
+      }
+
+      if(blog.startsWith('/')){
+        blog = 'http://qiita.com' + blog;
       }
 
       display_hatebu_calendar_count(blog, author);
