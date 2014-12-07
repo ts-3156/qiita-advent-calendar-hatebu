@@ -1,0 +1,25 @@
+{
+  "manifest_version": 2,
+  "name": "Advent Calendar Hatebu",
+  "version": "1.0",
+
+  "description": "Qiita Advent Calendarのはてブ数を表示するChrome Extension",
+
+  "icons": {
+    "16": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "http://api.b.st-hatena.com/entry.count",
+        "http://qiita.com/advent-calendar/2014",
+        "http://qiita.com/advent-calendar/2014/*"
+      ],
+      "js": ["js/jquery-1.11.1.min.js", "js/main.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
