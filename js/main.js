@@ -284,29 +284,31 @@ if (typeof String.prototype.startsWith != 'function') {
         .find('.hatebu-dummy-image-wrapper')
         .remove();
 
-    if(!cache || !cache['count'] || cache['count'] == 0){
-      var btn = $('<button class="btn btn-sm btn-default" style="font-size: 12px;" />')
-          .addClass('update-each-calendar-btn')
-          .text(' はてぶ数を更新')
-          .prepend('<i class="fa fa-refresh" />')
-          .on('click', function(){
-            $.get(calendar, function(res){
-              new Calendar(me.each_cal_td_selector, {url: calendar, html: res}).update(function(){
-                me.update_each(calendar, context, true);
-              });
+    var _btn = $('<button class="btn btn-sm btn-default" style="font-size: 12px;" />')
+        .addClass('update-each-calendar-btn')
+        .text(' はてぶ数を更新')
+        .prepend('<i class="fa fa-refresh" />')
+        .on('click', function(){
+          $.get(calendar, function(res){
+            new Calendar(me.each_cal_td_selector, {url: calendar, html: res}).update(function(){
+              me.update_each(calendar, context, true);
             });
           });
-      var span = $('<span class="please-open" />')
-          .append('&nbsp;')
-          .append(btn);
+        });
+    var update_btn = $('<span class="please-open" />')
+        .append('&nbsp;')
+        .append(_btn);
+
+    if(!cache || !cache['count'] || cache['count'] == 0){
       if(cache && cache['count'] == 0){
-        span.prepend(hatebu_dummy_image_wrapper(0, 16));
+        update_btn.prepend(hatebu_dummy_image_wrapper(0, 16));
       }
       context
-          .append(span);
+          .append(update_btn);
     }else{
       context
-          .append(hatebu_dummy_image_wrapper(cache['count'], 16));
+          .append(hatebu_dummy_image_wrapper(cache['count'], 16))
+          .append(update_btn);
     }
   };
 
