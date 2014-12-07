@@ -199,17 +199,19 @@ if (typeof String.prototype.startsWith != 'function') {
     });
   };
 
-  CalendarList.prototype.update_each = function (calendar, context) {
+  CalendarList.prototype.update_each = function (calendar, context, force_update) {
     var me = this;
-    var cache = fetch_cache(calendar);
+    var cache = force_update ? null : fetch_cache(calendar);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
       ;
     }else{
       var sum = 0;
+      var at_least_one = false;
       Object.keys(localStorage).forEach(function(key){
         if(!key.startsWith(KEY_PREFIX)) return;
         var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
         if(!cache || !cache['calendar'] || cache['calendar'] != calendar) return;
+        at_least_one = true;
         sum += cache['count'] ? parseInt(cache['count']) : 0;
       });
 
@@ -221,19 +223,23 @@ if (typeof String.prototype.startsWith != 'function') {
         };
         set_cache(calendar, cache);
       }else{
-        cache = null;
-        //$.get(calendar, function(res){
-        //  new Calendar(me.each_cal_td_selector, res).update(function(){
-        //    me.update_each(calendar, context);
-        //  });
-        //});
+        if(at_least_one){
+          cache = {
+            count: 0,
+            image: null,
+            created_at: now_seconds()
+          };
+        }else{
+          cache = null;
+        }
       }
     }
-    me.draw(context, cache);
+    me.draw(calendar, context, cache);
   };
 
   // カレンダー一覧ページを更新
-  CalendarList.prototype.draw = function (context, cache) {
+  CalendarList.prototype.draw = function (calendar, context, cache) {
+    var me = this;
     context
         .find('.please-open')
         .remove()
@@ -242,8 +248,24 @@ if (typeof String.prototype.startsWith != 'function') {
         .remove();
 
     if(!cache || !cache['count'] || cache['count'] == 0){
+      var btn = $('<button class="btn btn-sm btn-default" style="font-size: 12px;" />')
+          .text('はてぶ数を更新')
+          .on('click', function(){
+            $.get(calendar, function(res){
+              new Calendar(me.each_cal_td_selector, res).update(function(){
+                me.update_each(calendar, context, true);
+                console.log(calendar, res);
+              });
+            });
+          });
+      var span = $('<span class="please-open" />')
+          .append('&nbsp;')
+          .append(btn);
+      if(cache && cache['count'] == 0){
+        span.prepend(hatebu_dummy_image_wrapper(0, 16));
+      }
       context
-          .append($('<span class="please-open" style="font-size: 12px; color: #bbbbbb;" />').text(' カレンダーを1度開いてください'));
+          .append(span);
     }else{
       context
           .append(hatebu_dummy_image_wrapper(cache['count'], 16));
