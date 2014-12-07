@@ -179,6 +179,24 @@ if (typeof String.prototype.startsWith != 'function') {
   var CalendarList = function (td_selector, each_cal_td_selector) {
     this.tds = $(td_selector);
     this.each_cal_td_selector = each_cal_td_selector;
+    this.init();
+  };
+
+  CalendarList.prototype.init = function () {
+    var btn = $('<button class="btn btn-default" style="font-size: 12px;" />')
+        .addClass('update-all-calendar-btn')
+        .text('全てのカレンダーのはてぶ数を更新')
+        .on('click', function(){
+          var _btn = $(this);
+          $('.update-each-calendar-btn').each(function(i){
+            // 負荷を抑えるためのdelay
+            setTimeout(function() {
+              _btn.trigger('click');
+            } , 2000 * i);
+          });
+        });
+
+    $('h3').append(btn);
   };
 
   CalendarList.prototype.update = function () {
@@ -256,6 +274,7 @@ if (typeof String.prototype.startsWith != 'function') {
 
     if(!cache || !cache['count'] || cache['count'] == 0){
       var btn = $('<button class="btn btn-sm btn-default" style="font-size: 12px;" />')
+          .addClass('update-each-calendar-btn')
           .text('はてぶ数を更新')
           .on('click', function(){
             $.get(calendar, function(res){
