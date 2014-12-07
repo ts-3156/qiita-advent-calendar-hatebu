@@ -161,25 +161,35 @@ if (typeof String.prototype.startsWith != 'function') {
         .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
   };
 
-  // カレンダー一覧ページを更新
-  function update_calendar_root(context, cache){
-    if(!cache || !cache['count'] || cache['count'] == 0){
-      context
-          .find('.please-open')
-          .remove()
-          .end()
-          .append($('<span class="please-open" style="font-size: 12px; color: #bbbbbb;" />').text(' カレンダーを1度開いてください'));
-    }else{
-      context
-          .find('.hatebu-dummy-image-wrapper')
-          .remove()
-          .end()
-          .append(hatebu_dummy_image_wrapper(cache['count'], 16));
-    }
-  }
+  var CalendarList = function (td_selector) {
+    this.tds = $(td_selector);
+  };
 
-  // カレンダー一覧ページの処理
-  function display_hatebu_root_count(calendar, context){
+  CalendarList.prototype.update = function () {
+    var me = this;
+    this.tds.each(function(){
+      var td = $(this);
+      var a = td.find('a:last-child');
+      var calendar = 'http://qiita.com' + a.attr('href');
+
+      a.on('click', function(){
+        var timer_id = null, loop_num = 0;
+        function stop_timer() {
+          clearInterval(timer_id);
+        }
+        (function () {
+          timer_id = setInterval(function () {
+            me.update_each(calendar, td);
+            loop_num++;
+            if(loop_num > 3) stop_timer();
+          }, 1000);
+        })();
+      });
+      me.update_each(calendar, td);
+    });
+  };
+
+  CalendarList.prototype.update_each = function (calendar, context) {
     var cache = fetch_cache(calendar);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
       ;
@@ -203,8 +213,26 @@ if (typeof String.prototype.startsWith != 'function') {
         cache = null;
       }
     }
-    update_calendar_root(context, cache);
-  }
+    this.draw(context, cache);
+  };
+
+  // カレンダー一覧ページを更新
+  CalendarList.prototype.draw = function (context, cache) {
+    context
+        .find('.please-open')
+        .remove()
+        .end()
+        .find('.hatebu-dummy-image-wrapper')
+        .remove();
+
+    if(!cache || !cache['count'] || cache['count'] == 0){
+      context
+          .append($('<span class="please-open" style="font-size: 12px; color: #bbbbbb;" />').text(' カレンダーを1度開いてください'));
+    }else{
+      context
+          .append(hatebu_dummy_image_wrapper(cache['count'], 16));
+    }
+  };
 
   // エントリーポイント
   $('body').on('keypress', function(e){
@@ -219,25 +247,7 @@ if (typeof String.prototype.startsWith != 'function') {
     new Calendar('table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day')
         .update();
   }else{
-    $('div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle').each(function(){
-      var td = $(this);
-      var a = td.find('a:last-child');
-      var calendar = 'http://qiita.com' + a.attr('href');
-
-      a.on('click', function(){
-        var timer_id = null, loop_num = 0;
-        function stop_timer() {
-          clearInterval(timer_id);
-        }
-        (function () {
-          timer_id = setInterval(function () {
-            display_hatebu_root_count(calendar, td);
-            loop_num++;
-            if(loop_num > 3) stop_timer();
-          }, 1000);
-        })();
-      });
-      display_hatebu_root_count(calendar, td);
-    });
+    new CalendarList('div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle')
+        .update();
   }
 })(window, jQuery);
