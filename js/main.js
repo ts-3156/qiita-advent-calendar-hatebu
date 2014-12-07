@@ -179,22 +179,27 @@ if (typeof String.prototype.startsWith != 'function') {
   var CalendarList = function (td_selector, each_cal_td_selector) {
     this.tds = $(td_selector);
     this.each_cal_td_selector = each_cal_td_selector;
+    //this.show_update_btn = false;
     this.init();
   };
 
   CalendarList.prototype.init = function () {
+    var me = this;
+
     var refresh_btn = $('<button class="btn btn-info" style="font-size: 12px;" />')
         .addClass('update-all-calendar-btn')
-        .text(' 全てのカレンダーのはてぶ数を更新')
+        .text(' 全ての未集計カレンダーのはてぶ数を更新')
         .prepend('<i class="fa fa-refresh" />')
         .on('click', function(){
           var btn = $(this);
-          $('.update-each-calendar-btn').each(function(i){
-            // 負荷を抑えるためのdelay
-            setTimeout(function() {
-              btn.trigger('click');
-            } , 2000 * i);
-          });
+          if(window.confirm('数分かかりますがよろしいですか？')){
+            $('.update-each-calendar-btn').each(function(i){
+              // 負荷を抑えるためのdelay
+              setTimeout(function() {
+                btn.trigger('click');
+              } , 2000 * i);
+            });
+          }
         });
 
     $('h3').append(refresh_btn).append('&nbsp;');
@@ -209,6 +214,24 @@ if (typeof String.prototype.startsWith != 'function') {
         });
 
     $('h3').append(remove_btn);
+
+    //var checkbox = $('<label style="font-size: 12px;" />')
+    //    .append('<input type="checkbox" />')
+    //    .append(' 全てのカレンダーに更新ボタンを表示')
+    //    .on('change', function(){
+    //      me.show_update_btn = $(this).find('input').prop('checked');
+    //      if(me.show_update_btn){
+    //        $('has-value').$('.update-each-calendar-btn').show();
+    //      }else{
+    //        $('has-value').$('.update-each-calendar-btn').hide();
+    //      }
+    //    });
+    //var checkbox_wrapper = $('<span class="label label-default checkbox" />')
+    //    .append(checkbox);
+    //
+    //$('h3')
+    //    .append('&nbsp;')
+    //    .append(checkbox_wrapper);
   };
 
   CalendarList.prototype.update = function () {
@@ -295,20 +318,24 @@ if (typeof String.prototype.startsWith != 'function') {
             });
           });
         });
+
+    //me.show_update_btn ? _btn.show() : _btn.hide();
     var update_btn = $('<span class="please-open" />')
         .append('&nbsp;')
         .append(_btn);
 
     if(!cache || !cache['count'] || cache['count'] == 0){
+      // 集計していない or 集計されたが0だった
       if(cache && cache['count'] == 0){
+        // 集計されたが0だった
         update_btn.prepend(hatebu_dummy_image_wrapper(0, 16));
       }
       context
           .append(update_btn);
     }else{
+      // 集計された結果を持つ
       context
-          .append(hatebu_dummy_image_wrapper(cache['count'], 16))
-          .append(update_btn);
+          .append(hatebu_dummy_image_wrapper(cache['count'], 16));
     }
   };
 
