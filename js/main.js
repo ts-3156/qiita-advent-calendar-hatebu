@@ -37,7 +37,7 @@ if (typeof String.prototype.startsWith != 'function') {
     localStorage.setItem(KEY_PREFIX + key, JSON.stringify(obj));
   }
 
-  // キャッシュの削除
+  // 全てのキャッシュを削除
   function clear_cache(){
     Object.keys(localStorage).forEach(function(key){
       if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:') || key.startsWith(KEY_PREFIX)){
@@ -74,6 +74,7 @@ if (typeof String.prototype.startsWith != 'function') {
         .css('padding', padding_size + 'px')
   }
 
+  // はてぶ画像っぽいspanに半角空白を付ける
   function hatebu_dummy_image_wrapper(num, font_size){
     return $('<span class="hatebu-dummy-image-wrapper" />')
         .append('&nbsp;')
@@ -222,7 +223,7 @@ if (typeof String.prototype.startsWith != 'function') {
         (function () {
           timer_id = setInterval(function () {
             display_hatebu_root_count(calendar, td);
-            loop_num++; console.log('waiting ' + loop_num);
+            loop_num++;
             if(loop_num > 3) stop_timer();
           }, 1000);
         })();
