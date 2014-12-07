@@ -10,6 +10,7 @@ if (typeof String.prototype.startsWith != 'function') {
   var console = global.console;
   var localStorage = global.localStorage;
   var JSON = global.JSON;
+  var location = global.location;
   var parseInt = global.parseInt;
   var setInterval = global.setInterval;
   var clearInterval = global.clearInterval;
@@ -65,19 +66,31 @@ if (typeof String.prototype.startsWith != 'function') {
   // はてぶ画像っぽいspanを作る
   function hatebu_dummy_image(num, font_size){
     var font_size = font_size ? font_size : 11;
-    return $('<span class="hatebu-dummy-image" style="color: #FF6664; background-color: #FFEFEF;" />').text(' ' + num + ' users').css('font-size', font_size + 'px')
+    var padding_size = Math.round(font_size / 5);
+    if(padding_size > 3) padding_size = 3;
+    return $('<span class="hatebu-dummy-image" style="color: #FF6664; background-color: #FFEFEF;" />')
+        .text(num + ' users')
+        .css('font-size', font_size + 'px')
+        .css('padding', padding_size + 'px')
+  }
+
+  function hatebu_dummy_image_wrapper(num, font_size){
+    return $('<span class="hatebu-dummy-image-wrapper" />')
+        .append('&nbsp;')
+        .append(hatebu_dummy_image(num, font_size));
   }
 
   // カレンダーの各日付にはてぶ数を追加
   function hatebu_user_count(context, cache){
     context
-      .attr('title', 'hateb: ' + cache['count']);
+        .attr('title', 'hateb: ' + cache['count'])
+        .append('&nbsp;');
 
     if(cache['count'] == 0){
-      context.append(hatebu_dummy_image(0));
+      context
+          .append(hatebu_dummy_image(0));
     }else{
       context
-          .append('&nbsp;')
           .append($('<img />').attr('src', cache['image']));
     }
   }
@@ -88,7 +101,7 @@ if (typeof String.prototype.startsWith != 'function') {
     Object.keys(localStorage).forEach(function(key){
       if(!key.startsWith(KEY_PREFIX)) return;
       var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
-      if(!cache || !cache['count']) return;
+      if(!cache || !cache['count'] || location.href != cache['calendar']) return;
       sum += cache['count'] ? parseInt(cache['count']) : 0;
     });
     $('table.adventCalendar_calendar_table.table')
@@ -126,12 +139,28 @@ if (typeof String.prototype.startsWith != 'function') {
     }
   }
 
+  // カレンダー一覧ページを更新
+  function update_calendar_root(context, cache){
+    if(!cache || !cache['count'] || cache['count'] == 0){
+      context
+          .find('.please-open')
+          .remove()
+          .end()
+          .append($('<span class="please-open" style="font-size: 12px; color: #bbbbbb;" />').text(' カレンダーを1度開いてください'));
+    }else{
+      context
+          .find('.hatebu-dummy-image-wrapper')
+          .remove()
+          .end()
+          .append(hatebu_dummy_image_wrapper(cache['count'], 16));
+    }
+  }
+
   // カレンダー一覧ページの処理
   function display_hatebu_root_count(calendar, context){
     var cache = fetch_cache(calendar);
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
-      context
-          .append(hatebu_dummy_image(cache['count'], 16));
+      ;
     }else{
       var sum = 0;
       Object.keys(localStorage).forEach(function(key){
@@ -148,29 +177,21 @@ if (typeof String.prototype.startsWith != 'function') {
           created_at: now_seconds()
         };
         set_cache(calendar, cache);
-        context
-            .find('.hatebu-dummy-image')
-            .remove()
-            .end()
-            .append(hatebu_dummy_image(cache['count'], 16));
       }else{
-        context
-            .find('.please-open')
-            .remove()
-            .end()
-            .append($('<span class="please-open" style="font-size: 12px; color: #bbbbbb;" />').text(' カレンダーを1度開いてください'));
+        cache = null;
       }
     }
+    update_calendar_root(context, cache);
   }
 
   // エントリーポイント
-  if($('table.adventCalendar_calendar_table.table').exists()){
-    $('body').on('keypress', function(e){
-      if(e.which == 108){ // l key
-        clear_cache();
-      }
-    });
+  $('body').on('keypress', function(e){
+    if(e.which == 108 && window.confirm('Advent Calendar Hatebuのキャッシュを削除しますか？')){ // 108 == l key
+      clear_cache();
+    }
+  });
 
+  if($('table.adventCalendar_calendar_table.table').exists()){
     clear_cache_if_expired();
 
     $('table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day').each(function(){
