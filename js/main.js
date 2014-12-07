@@ -81,8 +81,14 @@ if (typeof String.prototype.startsWith != 'function') {
         .append(hatebu_dummy_image(num, font_size));
   }
 
-  var Calendar = function (td_selector, context) {
-    this.tds = $(td_selector, context);
+  var Calendar = function (td_selector, options) {
+    if(options){
+      this.tds = $(options['html']).find(td_selector);
+      this.url = options['url'];
+    }else{
+      this.tds = $(td_selector);
+      this.url = location.href;
+    }
   };
 
   Calendar.prototype.update = function (callback_fn) {
@@ -121,7 +127,7 @@ if (typeof String.prototype.startsWith != 'function') {
           count: count,
           image: image,
           blog: blog,
-          calendar: global.location.href,
+          calendar: me.url,
           created_at: now_seconds()
         };
         set_cache(blog, cache);
@@ -202,6 +208,7 @@ if (typeof String.prototype.startsWith != 'function') {
   CalendarList.prototype.update_each = function (calendar, context, force_update) {
     var me = this;
     var cache = force_update ? null : fetch_cache(calendar);
+
     if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
       ;
     }else{
@@ -252,9 +259,8 @@ if (typeof String.prototype.startsWith != 'function') {
           .text('はてぶ数を更新')
           .on('click', function(){
             $.get(calendar, function(res){
-              new Calendar(me.each_cal_td_selector, res).update(function(){
+              new Calendar(me.each_cal_td_selector, {url: calendar, html: res}).update(function(){
                 me.update_each(calendar, context, true);
-                console.log(calendar, res);
               });
             });
           });
@@ -283,7 +289,7 @@ if (typeof String.prototype.startsWith != 'function') {
 
   if($('table.adventCalendar_calendar_table.table').exists()){
     clear_cache_if_expired();
-    new Calendar(each_cal, document.body).update();
+    new Calendar(each_cal).update();
   }else{
     var cal_list = 'div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle';
     new CalendarList(cal_list, each_cal).update();
