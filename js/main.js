@@ -47,8 +47,8 @@ if (typeof String.prototype.startsWith != 'function') {
     console.log('cache cleared');
   }
 
-  // 期限切れキャッシュの削除
-  function clear_cache_if_expired(){
+  // 期限切れキャッシュの削除。カレンダーURLが指定されている場合は当該カレンダーのキャッシュのみ削除
+  function clear_cache_if_expired(calendar){
     Object.keys(localStorage).forEach(function(key){
       if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:')){
         localStorage.removeItem(key);
@@ -58,7 +58,9 @@ if (typeof String.prototype.startsWith != 'function') {
       if(!key.startsWith(KEY_PREFIX)) return;
       var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
       if(!cache || !cache['created_at'] || cache['created_at'] < now_seconds() - CACHE_MAX_AGE){
-        localStorage.removeItem(key); console.log('expired', key);
+        if(!calendar || (cache['calendar'] == calendar)){
+          localStorage.removeItem(key); console.log('expired', key);
+        }
       }
     });
   }
@@ -403,7 +405,7 @@ if (typeof String.prototype.startsWith != 'function') {
   var each_cal = 'table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day';
 
   if($('table.adventCalendar_calendar_table.table').exists()){
-    clear_cache_if_expired();
+    clear_cache_if_expired(location.href);
     new Calendar(each_cal).update();
   }else{
     var cal_list = 'div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle';
