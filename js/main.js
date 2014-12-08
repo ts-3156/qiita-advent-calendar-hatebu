@@ -103,6 +103,7 @@ if (typeof String.prototype.startsWith != 'function') {
     return global.hatebu_dummy_image_wrapper_cache[key].clone(false)
   }
 
+  // 各カレンダーページを更新するためのクラス
   var Calendar = function (td_selector, options) {
     if(options){
       this.tds = $(options['html']).find(td_selector);
@@ -113,6 +114,7 @@ if (typeof String.prototype.startsWith != 'function') {
     }
   };
 
+  // 更新処理を開始する時に外から呼ばれるメソッド
   Calendar.prototype.update = function (callback_fn) {
     var me = this;
 
@@ -136,6 +138,7 @@ if (typeof String.prototype.startsWith != 'function') {
     });
   };
 
+  // 各作者ごと(=日付ごと)の更新処理を行う
   Calendar.prototype.update_each = function (blog, context) {
     var me = this;
     var cache = fetch_cache(blog);
@@ -158,6 +161,7 @@ if (typeof String.prototype.startsWith != 'function') {
     }
   };
 
+  // DOMを更新する。1ページを更新する際、経過日数分呼ばれることになる
   Calendar.prototype.draw = function (context, cache) {
     this.add_count_beside_name(context, cache);
     this.add_all_count_in_caption();
@@ -198,6 +202,8 @@ if (typeof String.prototype.startsWith != 'function') {
         .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
   };
 
+  // カレンダー一覧ページを更新するためのクラス
+  // このクラスでは、基本的には、キャッシュがあったら使う、という動作しかしない
   var CalendarList = function (td_selector, each_cal_td_selector) {
     this.tds = $(td_selector);
     this.each_cal_td_selector = each_cal_td_selector;
@@ -233,6 +239,7 @@ if (typeof String.prototype.startsWith != 'function') {
         .on('click', function(){
           if(window.confirm('Advent Calendar Hatebu のキャッシュを削除しますか？')){
             clear_cache();
+            me.update();
           }
         });
 
@@ -274,14 +281,16 @@ if (typeof String.prototype.startsWith != 'function') {
     //    .append(checkbox_wrapper);
   };
 
+  // 更新処理を開始する時に外から呼ばれるメソッド
   CalendarList.prototype.update = function () {
     var me = this;
     this.tds.each(function(){
       var td = $(this);
-      var a = td.find('a:last-child');
+      var a = td.children('a:last');
       var calendar = 'http://qiita.com' + a.attr('href');
 
-      a.on('click', function(){
+      // 各カレンダーへのリンクに、別タブで開いたらはてぶ数を更新するイベントを設定しておく
+      a.off('.ADH').on('click.ADH', function(){
         var timer_id = null, loop_num = 0;
         function stop_timer() {
           clearInterval(timer_id);
@@ -298,6 +307,7 @@ if (typeof String.prototype.startsWith != 'function') {
     });
   };
 
+  // 各カレンダーごとの更新処理を行う
   CalendarList.prototype.update_each = function (calendar, context, force_update) {
     var me = this;
     var cache = force_update ? null : fetch_cache(calendar);
@@ -338,10 +348,13 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 
   // カレンダー一覧ページを更新
+  // 各カレンダーごとに、はてブ数と更新ボタンを追加する
   CalendarList.prototype.draw = function (calendar, context, cache) {
     var me = this;
+    var update_btn_class = 'please-open';
+
     context
-        .find('.please-open')
+        .find('.' + update_btn_class)
         .remove()
         .end()
         .find('.hatebu-dummy-image-wrapper')
@@ -353,7 +366,8 @@ if (typeof String.prototype.startsWith != 'function') {
           .text(' はてぶ数を更新')
           .prepend('<i class="fa fa-refresh" />');
     }
-    var _btn = me._each_update_btn_cache.clone(false);
+    var _btn = me._each_update_btn_cache.clone(false)
+        .attr('data-url', calendar); // デバッグ用
 
         _btn.on('click', function(){
           $.get(calendar, function(res){
@@ -364,7 +378,8 @@ if (typeof String.prototype.startsWith != 'function') {
         });
 
     //me.show_update_btn ? _btn.show() : _btn.hide();
-    var update_btn = $('<span class="please-open" />')
+    var update_btn = $('<span />')
+        .addClass(update_btn_class)
         .append('&nbsp;')
         .append(_btn);
 
@@ -374,10 +389,11 @@ if (typeof String.prototype.startsWith != 'function') {
         // 集計されたが0だった
         update_btn.prepend(hatebu_dummy_image_wrapper(0, 16));
       }
+      // 更新ボタンを追加する
       context
           .append(update_btn);
     }else{
-      // 集計された結果を持つ
+      // 集計された結果を持つため、はてブ数を追加
       context
           .append(hatebu_dummy_image_wrapper(cache['count'], 16));
     }
