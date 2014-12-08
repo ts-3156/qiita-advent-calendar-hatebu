@@ -238,22 +238,6 @@ if (typeof String.prototype.startsWith != 'function') {
         .attr('data-intro', 'このページの全てのカレンダーの はてブ数 を一括更新します。')
         .attr('data-step', '1');
 
-    var remove_btn = $('<button class="btn btn-danger" style="font-size: 12px;" />')
-        .addClass('remove-all-cache-btn')
-        .text(' はてぶ数のキャッシュを削除')
-        .prepend('<i class="fa fa-times" />')
-        .on('click', function(){
-          if(window.confirm('Advent Calendar Hatebu のキャッシュを削除しますか？')){
-            clear_cache();
-            me.update();
-          }
-        });
-
-    $('h3').append(remove_btn).append('&nbsp;');
-    $('.remove-all-cache-btn').first()
-        .attr('data-intro', 'このプラグインが持つ はてブ数 のキャッシュを全て削除します。')
-        .attr('data-step', '2');
-
     var sort_btn = $('<button class="btn btn-default" style="font-size: 12px;" />')
         .addClass('sort-all-calendar-btn')
         .text(' はてぶ数の降順でソート')
@@ -273,6 +257,22 @@ if (typeof String.prototype.startsWith != 'function') {
     $('h3').append(sort_btn).append('&nbsp;');
     $('.sort-all-calendar-btn').first()
         .attr('data-intro', '各カレンダーを はてブ数 の降順でソートします。')
+        .attr('data-step', '2');
+
+    var remove_btn = $('<button class="btn btn-danger" style="font-size: 12px;" />')
+        .addClass('remove-all-cache-btn')
+        .text(' はてぶ数のキャッシュを削除')
+        .prepend('<i class="fa fa-times" />')
+        .on('click', function(){
+          if(window.confirm('Advent Calendar Hatebu のキャッシュを削除しますか？')){
+            clear_cache();
+            me.update();
+          }
+        });
+
+    $('h3').append(remove_btn).append('&nbsp;');
+    $('.remove-all-cache-btn').first()
+        .attr('data-intro', 'このプラグインが持つ はてブ数 のキャッシュを全て削除します。')
         .attr('data-step', '3');
 
     //var checkbox = $('<label style="font-size: 12px;" />')
@@ -292,6 +292,10 @@ if (typeof String.prototype.startsWith != 'function') {
     //$('h3')
     //    .append('&nbsp;')
     //    .append(checkbox_wrapper);
+
+    me.tds.first()
+        .attr('data-intro', '各カレンダーごとに はてブ数 を更新します。')
+        .attr('data-step', '4');
   };
 
   // 更新処理を開始する時に外から呼ばれるメソッド
