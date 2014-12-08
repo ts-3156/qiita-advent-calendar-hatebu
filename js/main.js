@@ -47,8 +47,8 @@ if (typeof String.prototype.startsWith != 'function') {
     console.log('cache cleared');
   }
 
-  // 期限切れキャッシュの削除
-  function clear_cache_if_expired(){
+  // 期限切れキャッシュの削除。カレンダーURLが指定されている場合は当該カレンダーのキャッシュのみ削除
+  function clear_cache_if_expired(calendar){
     Object.keys(localStorage).forEach(function(key){
       if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:')){
         localStorage.removeItem(key);
@@ -58,7 +58,9 @@ if (typeof String.prototype.startsWith != 'function') {
       if(!key.startsWith(KEY_PREFIX)) return;
       var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
       if(!cache || !cache['created_at'] || cache['created_at'] < now_seconds() - CACHE_MAX_AGE){
-        localStorage.removeItem(key); console.log('expired', key);
+        if(!calendar || (cache['calendar'] == calendar)){
+          localStorage.removeItem(key); console.log('expired', key);
+        }
       }
     });
   }
@@ -103,6 +105,7 @@ if (typeof String.prototype.startsWith != 'function') {
     return global.hatebu_dummy_image_wrapper_cache[key].clone(false)
   }
 
+  // 各カレンダーページを更新するためのクラス
   var Calendar = function (td_selector, options) {
     if(options){
       this.tds = $(options['html']).find(td_selector);
@@ -113,6 +116,7 @@ if (typeof String.prototype.startsWith != 'function') {
     }
   };
 
+  // 更新処理を開始する時に外から呼ばれるメソッド
   Calendar.prototype.update = function (callback_fn) {
     var me = this;
 
@@ -136,6 +140,7 @@ if (typeof String.prototype.startsWith != 'function') {
     });
   };
 
+  // 各作者ごと(=日付ごと)の更新処理を行う
   Calendar.prototype.update_each = function (blog, context) {
     var me = this;
     var cache = fetch_cache(blog);
@@ -158,6 +163,7 @@ if (typeof String.prototype.startsWith != 'function') {
     }
   };
 
+  // DOMを更新する。1ページを更新する際、経過日数分呼ばれることになる
   Calendar.prototype.draw = function (context, cache) {
     this.add_count_beside_name(context, cache);
     this.add_all_count_in_caption();
@@ -198,6 +204,8 @@ if (typeof String.prototype.startsWith != 'function') {
         .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
   };
 
+  // カレンダー一覧ページを更新するためのクラス
+  // このクラスでは、基本的には、キャッシュがあったら使う、という動作しかしない
   var CalendarList = function (td_selector, each_cal_td_selector) {
     this.tds = $(td_selector);
     this.each_cal_td_selector = each_cal_td_selector;
@@ -205,6 +213,7 @@ if (typeof String.prototype.startsWith != 'function') {
     this.init();
   };
 
+  // ページ上部のボタンを追加。コンストラクタから一度だけ呼ばれる
   CalendarList.prototype.init = function () {
     var me = this;
 
@@ -224,20 +233,13 @@ if (typeof String.prototype.startsWith != 'function') {
           }
         });
 
-    $('h3').append(refresh_btn).append('&nbsp;');
-
-    var remove_btn = $('<button class="btn btn-danger" style="font-size: 12px;" />')
-        .text(' はてぶ数のキャッシュを削除')
-        .prepend('<i class="fa fa-times" />')
-        .on('click', function(){
-          if(window.confirm('Advent Calendar Hatebu のキャッシュを削除しますか？')){
-            clear_cache();
-          }
-        });
-
-    $('h3').append(remove_btn).append('&nbsp;');
+    $('h3').append('&nbsp;').append(refresh_btn).append('&nbsp;');
+    $('.update-all-calendar-btn').first()
+        .attr('data-intro', 'このページの全てのカレンダーの はてブ数 を一括更新します。')
+        .attr('data-step', '1');
 
     var sort_btn = $('<button class="btn btn-default" style="font-size: 12px;" />')
+        .addClass('sort-all-calendar-btn')
         .text(' はてぶ数の降順でソート')
         .prepend('<i class="fa fa-sort" />')
         .on('click', function(){
@@ -253,6 +255,25 @@ if (typeof String.prototype.startsWith != 'function') {
         });
 
     $('h3').append(sort_btn).append('&nbsp;');
+    $('.sort-all-calendar-btn').first()
+        .attr('data-intro', '各カレンダーを はてブ数 の降順でソートします。')
+        .attr('data-step', '2');
+
+    var remove_btn = $('<button class="btn btn-danger" style="font-size: 12px;" />')
+        .addClass('remove-all-cache-btn')
+        .text(' はてぶ数のキャッシュを削除')
+        .prepend('<i class="fa fa-times" />')
+        .on('click', function(){
+          if(window.confirm('Advent Calendar Hatebu のキャッシュを削除しますか？')){
+            clear_cache();
+            me.update();
+          }
+        });
+
+    $('h3').append(remove_btn).append('&nbsp;');
+    $('.remove-all-cache-btn').first()
+        .attr('data-intro', 'このプラグインが持つ はてブ数 のキャッシュを全て削除します。')
+        .attr('data-step', '3');
 
     //var checkbox = $('<label style="font-size: 12px;" />')
     //    .append('<input type="checkbox" />')
@@ -271,16 +292,22 @@ if (typeof String.prototype.startsWith != 'function') {
     //$('h3')
     //    .append('&nbsp;')
     //    .append(checkbox_wrapper);
+
+    me.tds.first()
+        .attr('data-intro', '各カレンダーごとに はてブ数 を更新します。')
+        .attr('data-step', '4');
   };
 
+  // 更新処理を開始する時に外から呼ばれるメソッド
   CalendarList.prototype.update = function () {
     var me = this;
     this.tds.each(function(){
       var td = $(this);
-      var a = td.find('a:last-child');
+      var a = td.children('a:last');
       var calendar = 'http://qiita.com' + a.attr('href');
 
-      a.on('click', function(){
+      // 各カレンダーへのリンクに、別タブで開いたらはてぶ数を更新するイベントを設定しておく
+      a.off('.ADH').on('click.ADH', function(){
         var timer_id = null, loop_num = 0;
         function stop_timer() {
           clearInterval(timer_id);
@@ -297,6 +324,7 @@ if (typeof String.prototype.startsWith != 'function') {
     });
   };
 
+  // 各カレンダーごとの更新処理を行う
   CalendarList.prototype.update_each = function (calendar, context, force_update) {
     var me = this;
     var cache = force_update ? null : fetch_cache(calendar);
@@ -337,10 +365,13 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 
   // カレンダー一覧ページを更新
+  // 各カレンダーごとに、はてブ数と更新ボタンを追加する
   CalendarList.prototype.draw = function (calendar, context, cache) {
     var me = this;
+    var update_btn_class = 'please-open';
+
     context
-        .find('.please-open')
+        .find('.' + update_btn_class)
         .remove()
         .end()
         .find('.hatebu-dummy-image-wrapper')
@@ -352,7 +383,8 @@ if (typeof String.prototype.startsWith != 'function') {
           .text(' はてぶ数を更新')
           .prepend('<i class="fa fa-refresh" />');
     }
-    var _btn = me._each_update_btn_cache.clone(false);
+    var _btn = me._each_update_btn_cache.clone(false)
+        .attr('data-url', calendar); // デバッグ用
 
         _btn.on('click', function(){
           $.get(calendar, function(res){
@@ -363,7 +395,8 @@ if (typeof String.prototype.startsWith != 'function') {
         });
 
     //me.show_update_btn ? _btn.show() : _btn.hide();
-    var update_btn = $('<span class="please-open" />')
+    var update_btn = $('<span />')
+        .addClass(update_btn_class)
         .append('&nbsp;')
         .append(_btn);
 
@@ -373,10 +406,11 @@ if (typeof String.prototype.startsWith != 'function') {
         // 集計されたが0だった
         update_btn.prepend(hatebu_dummy_image_wrapper(0, 16));
       }
+      // 更新ボタンを追加する
       context
           .append(update_btn);
     }else{
-      // 集計された結果を持つ
+      // 集計された結果を持つため、はてブ数を追加
       context
           .append(hatebu_dummy_image_wrapper(cache['count'], 16));
     }
@@ -386,10 +420,15 @@ if (typeof String.prototype.startsWith != 'function') {
   var each_cal = 'table.adventCalendar_calendar_table.table td.adventCalendar_calendar_day';
 
   if($('table.adventCalendar_calendar_table.table').exists()){
-    clear_cache_if_expired();
+    clear_cache_if_expired(location.href);
     new Calendar(each_cal).update();
   }else{
     var cal_list = 'div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle';
     new CalendarList(cal_list, each_cal).update();
+
+    if(!localStorage.getItem(KEY_PREFIX + 'intro')){
+      introJs().start();
+      localStorage.setItem(KEY_PREFIX + 'intro', true);
+    }
   }
 })(window, jQuery);
