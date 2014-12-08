@@ -24,7 +24,13 @@
         "http://qiita.com/advent-calendar/2014",
         "http://qiita.com/advent-calendar/2014/*"
       ],
-      "js": ["js/jquery-1.11.1.min.js", "js/jquery.sortElements.js", "js/main.js"],
+      "css": ["css/introjs.min.css"],
+      "js": [
+        "js/jquery-1.11.1.min.js",
+        "js/jquery.sortElements.js",
+        "js/intro.min.js",
+        "js/main.js"
+      ],
       "run_at": "document_idle"
     }
   ]

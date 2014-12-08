@@ -217,7 +217,7 @@ if (typeof String.prototype.startsWith != 'function') {
   CalendarList.prototype.init = function () {
     var me = this;
 
-    var refresh_btn = $('<button class="btn btn-info" style="font-size: 12px;" />')
+    var refresh_btn2 = $('<button class="btn btn-info" style="font-size: 12px;" />')
         .addClass('update-all-calendar-btn')
         .text(' 全ての未集計カレンダーのはてぶ数を更新')
         .prepend('<i class="fa fa-refresh" />')
@@ -233,9 +233,14 @@ if (typeof String.prototype.startsWith != 'function') {
           }
         });
 
-    $('h3').append('&nbsp;').append(refresh_btn).append('&nbsp;');
+    var refresh_btn1 = refresh_btn2.clone(true)
+        .attr('data-intro', 'このページの全てのカレンダーの はてブ数 を一括更新します。')
+        .attr('data-step', '1');
 
-    var remove_btn = $('<button class="btn btn-danger" style="font-size: 12px;" />')
+    $('h3').first().append('&nbsp;').append(refresh_btn1).append('&nbsp;');
+    $('h3').last().append('&nbsp;').append(refresh_btn2).append('&nbsp;');
+
+    var remove_btn2 = $('<button class="btn btn-danger" style="font-size: 12px;" />')
         .text(' はてぶ数のキャッシュを削除')
         .prepend('<i class="fa fa-times" />')
         .on('click', function(){
@@ -245,9 +250,14 @@ if (typeof String.prototype.startsWith != 'function') {
           }
         });
 
-    $('h3').append(remove_btn).append('&nbsp;');
+    var remove_btn1 = remove_btn2.clone(true)
+        .attr('data-intro', 'このプラグインが持つ はてブ数 のキャッシュを全て削除します。')
+        .attr('data-step', '2');
 
-    var sort_btn = $('<button class="btn btn-default" style="font-size: 12px;" />')
+    $('h3').first().append(remove_btn1).append('&nbsp;');
+    $('h3').last().append(remove_btn2).append('&nbsp;');
+
+    var sort_btn2 = $('<button class="btn btn-default" style="font-size: 12px;" />')
         .text(' はてぶ数の降順でソート')
         .prepend('<i class="fa fa-sort" />')
         .on('click', function(){
@@ -262,7 +272,14 @@ if (typeof String.prototype.startsWith != 'function') {
           });
         });
 
-    $('h3').append(sort_btn).append('&nbsp;');
+    var sort_btn1 = sort_btn2.clone(true)
+        .attr('data-intro', '各カレンダーを はてブ数 の降順でソートします。')
+        .attr('data-step', '3');
+
+    $('h3').first().append(sort_btn1).append('&nbsp;');
+    $('h3').last().append(sort_btn2).append('&nbsp;');
+
+    introJs().start();
 
     //var checkbox = $('<label style="font-size: 12px;" />')
     //    .append('<input type="checkbox" />')
