@@ -205,6 +205,7 @@ if (typeof String.prototype.startsWith != 'function') {
     this.init();
   };
 
+  // ページ上部のボタンを追加。コンストラクタから一度だけ呼ばれる
   CalendarList.prototype.init = function () {
     var me = this;
 
@@ -224,7 +225,7 @@ if (typeof String.prototype.startsWith != 'function') {
           }
         });
 
-    $('h3').append(refresh_btn).append('&nbsp;');
+    $('h3').append('&nbsp;').append(refresh_btn).append('&nbsp;');
 
     var remove_btn = $('<button class="btn btn-danger" style="font-size: 12px;" />')
         .text(' はてぶ数のキャッシュを削除')
