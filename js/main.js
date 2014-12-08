@@ -279,8 +279,6 @@ if (typeof String.prototype.startsWith != 'function') {
     $('h3').first().append(sort_btn1).append('&nbsp;');
     $('h3').last().append(sort_btn2).append('&nbsp;');
 
-    introJs().start();
-
     //var checkbox = $('<label style="font-size: 12px;" />')
     //    .append('<input type="checkbox" />')
     //    .append(' 全てのカレンダーに更新ボタンを表示')
@@ -427,5 +425,10 @@ if (typeof String.prototype.startsWith != 'function') {
   }else{
     var cal_list = 'div.adventCalendar_calendarList td.adventCalendar_labelContainer.adventCalendar_calendarList_calendarTitle';
     new CalendarList(cal_list, each_cal).update();
+
+    if(!localStorage.getItem(KEY_PREFIX + 'intro')){
+      introJs().start();
+      localStorage.setItem(KEY_PREFIX + 'intro', true);
+    }
   }
 })(window, jQuery);
