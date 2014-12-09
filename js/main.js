@@ -176,6 +176,8 @@ if (typeof String.prototype.startsWith != 'function') {
     if(cache && !is_expired(cache['created_at'])){
       me.draw(context, cache);
     }else{
+      me.blogs[i] = null;
+
       $.get(API + encodeURIComponent(blog), function(res){
         var count = res == '' ? 0 : parseInt(res);
         var image = IMAGE_API + blog;
