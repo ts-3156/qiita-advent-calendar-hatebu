@@ -18,6 +18,10 @@ if (typeof String.prototype.startsWith != 'function') {
   var CACHE_MAX_AGE = 3600; // seconds
   var API = 'http://api.b.st-hatena.com/entry.count?url=';
   var IMAGE_API = 'http://b.hatena.ne.jp/entry/image/';
+  var OLD_KEY_PREFIX = [
+    'advent_calendar_hatebu:',
+    'ACH:'
+  ];
   var KEY_PREFIX = 'ACH2:';
 
   // 現在の秒数
@@ -45,7 +49,8 @@ if (typeof String.prototype.startsWith != 'function') {
   // 全てのキャッシュを削除
   function clear_cache(){
     Object.keys(localStorage).forEach(function(key){
-      if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:') || key.startsWith(KEY_PREFIX)){
+      if(key.startsWith('http') || key.startsWith(OLD_KEY_PREFIX[0]) ||
+          key.startsWith(OLD_KEY_PREFIX[1]) || key.startsWith(KEY_PREFIX)){
         localStorage.removeItem(key);
       }
     });
@@ -55,7 +60,8 @@ if (typeof String.prototype.startsWith != 'function') {
   // 期限切れキャッシュの削除。カレンダーURLが指定されている場合は当該カレンダーのキャッシュのみ削除
   function clear_cache_if_expired(calendar){
     Object.keys(localStorage).forEach(function(key){
-      if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:')){
+      if(key.startsWith('http') || key.startsWith(OLD_KEY_PREFIX[0] ||
+          key.startsWith(OLD_KEY_PREFIX[1]))){
         localStorage.removeItem(key);
         return;
       }
