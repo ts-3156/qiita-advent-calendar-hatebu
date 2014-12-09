@@ -18,11 +18,20 @@ if (typeof String.prototype.startsWith != 'function') {
   var CACHE_MAX_AGE = 3600; // seconds
   var API = 'http://api.b.st-hatena.com/entry.count?url=';
   var IMAGE_API = 'http://b.hatena.ne.jp/entry/image/';
-  var KEY_PREFIX = 'ACH:';
+  var OLD_KEY_PREFIX = [
+    'advent_calendar_hatebu:',
+    'ACH:'
+  ];
+  var KEY_PREFIX = 'ACH2:';
 
   // 現在の秒数
   function now_seconds(){
     return new Date().getTime() / 1000
+  }
+
+  function is_expired(created_at){
+    if(!created_at || isNaN(created_at)) return false;
+    return created_at < now_seconds() - CACHE_MAX_AGE
   }
 
   // localStorageからの取得とJSON.parse
@@ -40,7 +49,8 @@ if (typeof String.prototype.startsWith != 'function') {
   // 全てのキャッシュを削除
   function clear_cache(){
     Object.keys(localStorage).forEach(function(key){
-      if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:') || key.startsWith(KEY_PREFIX)){
+      if(key.startsWith('http') || key.startsWith(OLD_KEY_PREFIX[0]) ||
+          key.startsWith(OLD_KEY_PREFIX[1]) || key.startsWith(KEY_PREFIX)){
         localStorage.removeItem(key);
       }
     });
@@ -50,14 +60,15 @@ if (typeof String.prototype.startsWith != 'function') {
   // 期限切れキャッシュの削除。カレンダーURLが指定されている場合は当該カレンダーのキャッシュのみ削除
   function clear_cache_if_expired(calendar){
     Object.keys(localStorage).forEach(function(key){
-      if(key.startsWith('http') || key.startsWith('advent_calendar_hatebu:')){
+      if(key.startsWith('http') || key.startsWith(OLD_KEY_PREFIX[0] ||
+          key.startsWith(OLD_KEY_PREFIX[1]))){
         localStorage.removeItem(key);
         return;
       }
 
       if(!key.startsWith(KEY_PREFIX)) return;
       var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
-      if(!cache || !cache['created_at'] || cache['created_at'] < now_seconds() - CACHE_MAX_AGE){
+      if(!cache || !cache['created_at'] || is_expired(cache['created_at'])){
         if(!calendar || (cache['calendar'] == calendar)){
           localStorage.removeItem(key); console.log('expired', key);
         }
@@ -107,12 +118,29 @@ if (typeof String.prototype.startsWith != 'function') {
 
   // 各カレンダーページを更新するためのクラス
   var Calendar = function (td_selector, options) {
+    this.finished = {};
+
     if(options){
       this.tds = $(options['html']).find(td_selector);
       this.url = options['url'];
+      this.need_draw = false;
     }else{
       this.tds = $(td_selector);
       this.url = location.href;
+      this.need_draw = true;
+    }
+
+    this.loop_num = this.tds.length;
+    this.fetch_all_cache();
+  };
+
+  Calendar.prototype.fetch_all_cache = function () {
+    var cache = fetch_cache(this.url);
+    if(!cache || !cache['blogs'] || !cache['created_at'] ||
+        is_expired(cache['created_at']) || Object.keys(cache['blogs']).length == 0){
+      this.blogs = {};
+    }else{
+      this.blogs = cache['blogs'];
     }
   };
 
@@ -124,11 +152,12 @@ if (typeof String.prototype.startsWith != 'function') {
       me.draw_callback = callback_fn;
     }
 
-    this.tds.each(function(){
+    this.tds.each(function(i){
       var td = $(this);
       var author = td.find('p.adventCalendar_calendar_author a');
       var blog = td.find('p.adventCalendar_calendar_entry a').attr('href');
       if(blog === undefined || blog == ''){
+        me.finished[i] = true;
         return true
       }
 
@@ -136,15 +165,15 @@ if (typeof String.prototype.startsWith != 'function') {
         blog = 'http://qiita.com' + blog;
       }
 
-      me.update_each(blog, author);
+      me.update_each(blog, author, i);
     });
   };
 
   // 各作者ごと(=日付ごと)の更新処理を行う
-  Calendar.prototype.update_each = function (blog, context) {
+  Calendar.prototype.update_each = function (blog, context, i) {
     var me = this;
-    var cache = fetch_cache(blog);
-    if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
+    var cache = me.blogs[i];
+    if(cache && !is_expired(cache['created_at'])){
       me.draw(context, cache);
     }else{
       $.get(API + encodeURIComponent(blog), function(res){
@@ -157,16 +186,45 @@ if (typeof String.prototype.startsWith != 'function') {
           calendar: me.url,
           created_at: now_seconds()
         };
-        set_cache(blog, cache);
+
+        me.blogs[i] = cache;
+        me.finished[i] = true;
+
+        if(me.all_finished()){
+          me.set_all_cache();
+        }
+
         me.draw(context, cache);
       });
     }
   };
 
+  Calendar.prototype.all_finished = function () {
+    var finished = true;
+    for(var i = 0; i < this.loop_num; i++){
+      if(!this.finished[i]){
+        finished = false;
+        break;
+      }
+    }
+
+    return finished;
+  };
+
+  Calendar.prototype.set_all_cache = function () {
+    var data = {
+      blogs: this.blogs,
+      created_at: now_seconds()
+    };
+    set_cache(this.url, data);
+  };
+
   // DOMを更新する。1ページを更新する際、経過日数分呼ばれることになる
   Calendar.prototype.draw = function (context, cache) {
-    this.add_count_beside_name(context, cache);
-    this.add_all_count_in_caption();
+    if(this.need_draw){
+      this.add_count_beside_name(context, cache);
+      this.add_all_count_in_caption();
+    }
 
     if (typeof this.draw_callback == 'function') {
       this.draw_callback();
@@ -188,20 +246,26 @@ if (typeof String.prototype.startsWith != 'function') {
     }
   };
 
+  // 現在のカレンダーのはてぶ数合計を集計する
+  Calendar.prototype.sum_hatebu = function () {
+    var sum = 0;
+    for(var i = 0; i < this.loop_num; i++){
+      var cache = this.blogs[i];
+      if(!cache || !cache['count'])
+        continue;
+      sum += cache['count'] ? parseInt(cache['count']) : 0;
+    }
+
+    return sum;
+  };
+
   // 現在のカレンダーのはてぶ数合計をtableタグのcaptionに追加
   Calendar.prototype.add_all_count_in_caption = function () {
-    var sum = 0;
-    Object.keys(localStorage).forEach(function(key){
-      if(!key.startsWith(KEY_PREFIX)) return;
-      var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
-      if(!cache || !cache['count'] || location.href != cache['calendar']) return;
-      sum += cache['count'] ? parseInt(cache['count']) : 0;
-    });
     $('table.adventCalendar_calendar_table.table')
         .find('caption')
         .remove()
         .end()
-        .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(sum, 28)));
+        .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(this.sum_hatebu, 28)));
   };
 
   // カレンダー一覧ページを更新するためのクラス
@@ -329,7 +393,7 @@ if (typeof String.prototype.startsWith != 'function') {
     var me = this;
     var cache = force_update ? null : fetch_cache(calendar);
 
-    if(cache && cache['created_at'] > now_seconds() - CACHE_MAX_AGE){
+    if(cache && !is_expired(cache['created_at'])){
       ;
     }else{
       var sum = 0;
