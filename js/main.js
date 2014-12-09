@@ -110,9 +110,11 @@ if (typeof String.prototype.startsWith != 'function') {
     if(options){
       this.tds = $(options['html']).find(td_selector);
       this.url = options['url'];
+      this.need_draw = false;
     }else{
       this.tds = $(td_selector);
       this.url = location.href;
+      this.need_draw = true;
     }
   };
 
@@ -165,8 +167,10 @@ if (typeof String.prototype.startsWith != 'function') {
 
   // DOMを更新する。1ページを更新する際、経過日数分呼ばれることになる
   Calendar.prototype.draw = function (context, cache) {
-    this.add_count_beside_name(context, cache);
-    this.add_all_count_in_caption();
+    if(this.need_draw){
+      this.add_count_beside_name(context, cache);
+      this.add_all_count_in_caption();
+    }
 
     if (typeof this.draw_callback == 'function') {
       this.draw_callback();
