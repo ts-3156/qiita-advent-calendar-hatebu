@@ -30,7 +30,7 @@ if (typeof String.prototype.startsWith != 'function') {
   }
 
   function is_expired(created_at){
-    if(!created_at || isNaN(created_at)) return false;
+    if(!created_at || isNaN(created_at)) return true;
     return created_at < now_seconds() - CACHE_MAX_AGE
   }
 
@@ -176,6 +176,8 @@ if (typeof String.prototype.startsWith != 'function') {
     if(cache && !is_expired(cache['created_at'])){
       me.draw(context, cache);
     }else{
+      me.blogs[i] = null;
+
       $.get(API + encodeURIComponent(blog), function(res){
         var count = res == '' ? 0 : parseInt(res);
         var image = IMAGE_API + blog;
@@ -214,6 +216,7 @@ if (typeof String.prototype.startsWith != 'function') {
   Calendar.prototype.set_all_cache = function () {
     var data = {
       blogs: this.blogs,
+      length: this.loop_num,
       created_at: now_seconds()
     };
     set_cache(this.url, data);
@@ -265,7 +268,7 @@ if (typeof String.prototype.startsWith != 'function') {
         .find('caption')
         .remove()
         .end()
-        .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(this.sum_hatebu, 28)));
+        .prepend($('<caption style="text-align: left;" />').html(hatebu_dummy_image(this.sum_hatebu(), 28)));
   };
 
   // カレンダー一覧ページを更新するためのクラス
@@ -292,7 +295,7 @@ if (typeof String.prototype.startsWith != 'function') {
               // 負荷を抑えるためのdelay
               setTimeout(function() {
                 btn.trigger('click');
-              } , 500 * i);
+              } , 100 * i);
             });
           }
         });
@@ -389,48 +392,30 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 
   // 各カレンダーごとの更新処理を行う
-  CalendarList.prototype.update_each = function (calendar, context, force_update) {
+  CalendarList.prototype.update_each = function (calendar, context) {
     var me = this;
-    var cache = force_update ? null : fetch_cache(calendar);
+    var cache = fetch_cache(calendar);
+    var sum = 0;
 
     if(cache && !is_expired(cache['created_at'])){
-      ;
-    }else{
-      var sum = 0;
-      var at_least_one = false;
-      Object.keys(localStorage).forEach(function(key){
-        if(!key.startsWith(KEY_PREFIX)) return;
-        var cache = fetch_cache(key.split(KEY_PREFIX)[1]);
-        if(!cache || !cache['calendar'] || cache['calendar'] != calendar) return;
-        at_least_one = true;
-        sum += cache['count'] ? parseInt(cache['count']) : 0;
-      });
+      var blogs = cache['blogs'];
+      var length = cache['length'];
 
-      if(sum != 0){
-        cache = {
-          count: sum,
-          image: IMAGE_API + calendar,
-          created_at: now_seconds()
-        };
-        set_cache(calendar, cache);
-      }else{
-        if(at_least_one){
-          cache = {
-            count: 0,
-            image: null,
-            created_at: now_seconds()
-          };
-        }else{
-          cache = null;
-        }
+      for(var i = 0; i < length; i++){
+        var blog = blogs[i];
+        if(!blog || !blog['count'])
+         continue;
+        sum += blog['count'];
       }
+    }else{
+      cache = null;
     }
-    me.draw(calendar, context, cache);
+    me.draw(calendar, context, cache, sum);
   };
 
   // カレンダー一覧ページを更新
   // 各カレンダーごとに、はてブ数と更新ボタンを追加する
-  CalendarList.prototype.draw = function (calendar, context, cache) {
+  CalendarList.prototype.draw = function (calendar, context, cache, sum) {
     var me = this;
     var update_btn_class = 'please-open';
 
@@ -453,7 +438,7 @@ if (typeof String.prototype.startsWith != 'function') {
         _btn.on('click', function(){
           $.get(calendar, function(res){
             new Calendar(me.each_cal_td_selector, {url: calendar, html: res}).update(function(){
-              me.update_each(calendar, context, true);
+              me.update_each(calendar, context);
             });
           });
         });
@@ -464,19 +449,16 @@ if (typeof String.prototype.startsWith != 'function') {
         .append('&nbsp;')
         .append(_btn);
 
-    if(!cache || !cache['count'] || cache['count'] == 0){
-      // 集計していない or 集計されたが0だった
-      if(cache && cache['count'] == 0){
-        // 集計されたが0だった
-        update_btn.prepend(hatebu_dummy_image_wrapper(0, 16));
-      }
-      // 更新ボタンを追加する
-      context
-          .append(update_btn);
+    if(!cache){
+      // 集計していない
+      context.append(update_btn);
+    }else if(sum == 0){
+      // 集計されたが0だった
+      update_btn.prepend(hatebu_dummy_image_wrapper(0, 16));
+      context.append(update_btn);
     }else{
-      // 集計された結果を持つため、はてブ数を追加
-      context
-          .append(hatebu_dummy_image_wrapper(cache['count'], 16));
+      // 集計済みの数値を持つ
+      context.append(hatebu_dummy_image_wrapper(sum, 16));
     }
   };
 
