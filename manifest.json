@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Qiita Advent Calendar はてブ カウンター",
-  "version": "1.1.0",
+  "version": "1.2.0",
 
   "description": "Qiita Advent Calendarのはてブ数を表示・取得・ソートするChrome Extensionです。",
 
